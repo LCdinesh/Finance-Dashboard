@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>FinanceTrack — Personal Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="brand-mark">FT</div>
+        <div>
+          <div class="brand-name">FinanceTrack</div>
+          <div class="brand-sub">Personal Ledger</div>
+        </div>
+      </div>
+
+      <nav class="year-nav">
+        <button class="yr-arrow" id="yearPrev" onclick="shiftYear(-1)">‹</button>
+        <div class="year-pills" id="yearPills"></div>
+        <button class="yr-arrow" id="yearNext" onclick="shiftYear(1)">›</button>
+      </nav>
+
+      <div class="filter-control-wrapper">
+        <div class="month-filter-container">
+          <label for="monthFilter">📅 Month:</label>
+          <select id="monthFilter" class="month-select">
+            <option value="all">All Months</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="topbar-right">
+        <div class="sync-info">
+          <span class="live-dot"></span>
+          <span id="lastSync" class="sync-text">—</span>
+        </div>
+        <button id="refreshBtn" class="refresh-btn" onclick="refreshData()">⟳</button>
+        <button id="exportBtn" class="export-btn" onclick="exportToCSV()">📎</button>
+        <a class="log-btn" href="https://docs.google.com/forms/d/e/1FAIpQLScr9thxU0S0bnYztKSMQ-nSqD7FmY9IYl9uVYllAf9GJ6aNLA/viewform" target="_blank">+ Log</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="page">
+    <div id="loadingState" class="center-state">
+      <div class="loader-ring"></div>
+      <p>Fetching your financial history…</p>
+      <p class="loading-hint">Make sure your Google Sheet is shared publicly</p>
+    </div>
+
+    <div id="errorState" class="center-state" style="display:none;">
+      <div class="error-icon">⚠️</div>
+      <p class="error-title">Could not load data</p>
+      <p class="error-message">Please make sure your Google Sheet is set to:</p>
+      <div class="error-instructions">
+        <ol>
+          <li>Click "Share" → "Anyone with the link"</li>
+          <li>Set permission to "Viewer"</li>
+          <li>Sheet tab name must be "Form Responses 1" or "Sheet1"</li>
+          <li>Your form must have submitted at least one response</li>
+        </ol>
+      </div>
+      <button onclick="location.reload()" class="retry-btn">⟳ Try Again</button>
+    </div>
+
+    <div id="dashboard" style="display:none">
+      <div class="view-label-row">
+        <div class="view-label" id="viewLabel">—</div>
+        <div class="view-desc" id="viewDesc">—</div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpi-row" id="kpiRow"></div>
+
+      <!-- Insight chips -->
+      <div class="chip-row" id="chipRow"></div>
+
+      <!-- Row 1: Monthly Cash Flow -->
+      <div class="grid-cols g11">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">Monthly Cash Flow</span>
+            <div class="leg-row" id="cashLegend"></div>
+          </div>
+          <div class="chart-wrap" style="height:280px">
+            <canvas id="monthlyChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 2: Category Breakdown Charts -->
+      <div class="grid-cols g12">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">📊 Expense Breakdown</span>
+            <span class="card-sub" id="expCatTotal"></span>
+          </div>
+          <div class="chart-wrap" style="height:350px">
+            <canvas id="expenseCatChart"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">💰 Income Breakdown</span>
+            <span class="card-sub" id="incCatTotal"></span>
+          </div>
+          <div class="chart-wrap" style="height:350px">
+            <canvas id="incomeCatChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 3: Daily Balance + Payment Methods -->
+      <div class="grid-cols g12">
+        <div class="card">
+          <div class="card-head"><span class="card-title">📈 Daily Balance Timeline</span></div>
+          <div class="chart-wrap" style="height:250px">
+            <canvas id="dailyBalanceChart"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><span class="card-title">💳 Payment Methods</span></div>
+          <div class="chart-wrap" style="height:200px">
+            <canvas id="paymentChart"></canvas>
+          </div>
+          <div class="donut-leg" id="paymentLegend"></div>
+        </div>
+      </div>
+
+      <!-- Row 4: YoY Analysis -->
+      <div class="card yoy-card">
+        <div class="card-head">
+          <div>
+            <span class="card-title">Year-over-Year Analysis</span>
+            <div class="card-desc">Income vs Expenses by year · Side-by-side comparison</div>
+          </div>
+          <div class="leg-row" id="yoyLegend"></div>
+        </div>
+        <div class="chart-wrap" style="height:400px">
+          <canvas id="yoyChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Row 5: Annual Summary -->
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">Annual Summary</span>
+          <span class="card-sub">Click any year to filter</span>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="annual-table" id="annualTable">
+            <thead>
+              <tr><th>Year</th><th>Income</th><th>Expenses</th><th>Invested</th><th>Net Balance</th><th>Savings %</th><th>Txns</th></tr>
+            </thead>
+            <tbody id="annualBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Row 6: Transactions -->
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">Recent Transactions</span>
+          <span class="card-sub" id="txMeta"></span>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="tx-table">
+            <thead><tr><th>Date</th><th>Type</th><th>Category</th><th>Payment</th><th style="text-align:right">Amount</th></tr></thead>
+            <tbody id="txBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="toastMessage" class="toast-message"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
