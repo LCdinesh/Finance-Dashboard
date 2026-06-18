@@ -1,21 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>FinanceTrack — Personal Dashboard</title>
 
-  <!-- Fonts -->
-  https://fonts.googleapis.com
-  <link rel="preconnect" href="https:// href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@family=JetBrains+Mono:wght@400;500&display=swap
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0md.min.js
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
 
-  <!-- Stylesheet -->
-  <link rel="stylesheet" href="style.cssass="topbar">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <header class="topbar">
     <div class="topbar-inner">
+
       <div class="brand">
         <div class="brand-mark">FT</div>
         <div>
@@ -25,9 +31,9 @@
       </div>
 
       <nav class="year-nav">
-        <button id="yearPrev" class="yr-arrow" onclick="shiftYear(-1)">‹</button>
-        <div id="yearPills" class="year-pills"></div>
-        <button id="yearNext" class="yr-arrow" onclick="shiftYear(1)">›</button>
+        <button class="yr-arrow" id="yearPrev" onclick="shiftYear(-1)">‹</button>
+        <div class="year-pills" id="yearPills"></div>
+        <button class="yr-arrow" id="yearNext" onclick="shiftYear(1)">›</button>
       </nav>
 
       <div class="filter-control-wrapper">
@@ -46,49 +52,68 @@
         </div>
         <button id="refreshBtn" class="refresh-btn" onclick="refreshData()">⟳</button>
         <button id="exportBtn" class="export-btn" onclick="exportToCSV()">📎</button>
-        <a
-          class="log-btn"
+
+        <a class="log-btn"
           href="https://docs.google.com/forms/d/e/1FAIpQLScr9thxU0S0bnYztKSMQ-nSqD7FmY9IYl9uVYllAf9GJ6aNLA/viewform"
-           <main class="page">
-    <!-- Loading -->
+          target="_blank">+ Log</a>
+      </div>
+
+    </div>
+  </header>
+
+  <main class="page">
+
+    <!-- LOADING -->
     <div id="loadingState" class="center-state">
       <div class="loader-ring"></div>
       <p>Fetching your financial history…</p>
       <p class="loading-hint">Make sure your Google Sheet is shared publicly</p>
     </div>
 
-    <!-- Error State -->
-    <div id="errorState" class="center-state" style="display: none;">
+    <!-- ERROR STATE -->
+    <div id="errorState" class="center-state" style="display:none;">
       <div class="error-icon">⚠️</div>
       <p class="error-title">Could not load data</p>
-      <p class="error-message">Check sheet access permissions.</p>
+      <p class="error-message">Please make sure your Google Sheet is set to:</p>
+      <div class="error-instructions">
+        <ol>
+          <li>Click "Share" → "Anyone with the link"</li>
+          <li>Set permission to "Viewer"</li>
+          <li>Sheet tab name must be "Form Responses 1" or "Sheet1"</li>
+          <li>Your form must have submitted at least one response</li>
+        </ol>
+      </div>
       <button onclick="location.reload()" class="retry-btn">⟳ Try Again</button>
     </div>
 
-    <!-- Dashboard -->
-    <div id="dashboard" style="display: none;">
+    <!-- DASHBOARD -->
+    <div id="dashboard" style="display:none">
+
       <div class="view-label-row">
-        <div id="viewLabel" class="view-label">—</div>
-        <div id="viewDesc" class="view-desc">—</div>
+        <div class="view-label" id="viewLabel">—</div>
+        <div class="view-desc" id="viewDesc">—</div>
       </div>
 
-      <div id="kpiRow" class="kpi-row"></div>
-      <div id="chipRow" class="chip-row"></div>
+      <!-- KPIs -->
+      <div class="kpi-row" id="kpiRow"></div>
 
-      <!-- Monthly Chart -->
+      <!-- CHIP ROW -->
+      <div class="chip-row" id="chipRow"></div>
+
+      <!-- ROW 1: MONTHLY CASH FLOW -->
       <div class="grid-cols g11">
         <div class="card">
           <div class="card-head">
             <span class="card-title">Monthly Cash Flow</span>
-            <div id="cashLegend" class="leg-row"></div>
+            <div class="leg-row" id="cashLegend"></div>
           </div>
-          <div class="chart-wrap" style="height: 280px;">
+          <div class="chart-wrap" style="height:280px;">
             <canvas id="monthlyChart"></canvas>
           </div>
         </div>
       </div>
 
-      <!-- Category Filters -->
+      <!-- 🌟 INSERTED GLOBAL CATEGORY FILTERS HERE (Option A) -->
       <div class="category-filter-bar">
         <label for="expenseCategoryFilter">Expense Category:</label>
         <select id="expenseCategoryFilter" class="category-select">
@@ -102,15 +127,17 @@
           <option value="all">All Categories</option>
         </select>
       </div>
+      <!-- END FILTER INSERTION -->
 
-      <!-- Category Charts -->
+      <!-- ROW 2: CATEGORY BREAKDOWN -->
       <div class="grid-cols g12">
+
         <div class="card">
           <div class="card-head">
             <span class="card-title">📊 Expense Breakdown</span>
-            <span id="expCatTotal" class="card-sub"></span>
+            <span class="card-sub" id="expCatTotal"></span>
           </div>
-          <div class="chart-wrap" style="height: 350px;">
+          <div class="chart-wrap" style="height:350px;">
             <canvas id="expenseCatChart"></canvas>
           </div>
         </div>
@@ -118,74 +145,103 @@
         <div class="card">
           <div class="card-head">
             <span class="card-title">💰 Income Breakdown</span>
-            <span id="incCatTotal" class="card-sub"></span>
+            <span class="card-sub" id="incCatTotal"></span>
           </div>
-          <div class="chart-wrap" style="height: 350px;">
+          <div class="chart-wrap" style="height:350px;">
             <canvas id="incomeCatChart"></canvas>
           </div>
         </div>
+
       </div>
 
-      <!-- Daily + Payment Charts -->
+      <!-- ROW 3: DAILY BALANCE + PAYMENT -->
       <div class="grid-cols g12">
+
         <div class="card">
           <div class="card-head"><span class="card-title">📈 Daily Balance Timeline</span></div>
-          <div class="chart-wrap" style="height: 250px;">
+          <div class="chart-wrap" style="height:250px;">
             <canvas id="dailyBalanceChart"></canvas>
           </div>
         </div>
 
         <div class="card">
           <div class="card-head"><span class="card-title">💳 Payment Methods</span></div>
-          <div class="chart-wrap" style="height: 200px;">
+          <div class="chart-wrap" style="height:200px;">
             <canvas id="paymentChart"></canvas>
           </div>
-          <div id="paymentLegend" class="donut-leg"></div>
+          <div class="donut-leg" id="paymentLegend"></div>
         </div>
+
       </div>
 
-      <!-- YoY -->
+      <!-- ROW 4: YOY ANALYSIS -->
       <div class="card yoy-card">
         <div class="card-head">
-          <span class="card-title">Year-over-Year Analysis</span>
-          <div id="yoyLegend" class="leg-row"></div>
+          <div>
+            <span class="card-title">Year-over-Year Analysis</span>
+            <div class="card-desc">Income vs Expenses by year · Side-by-side comparison</div>
+          </div>
+          <div class="leg-row" id="yoyLegend"></div>
         </div>
-        <div class="chart-wrap" style="height: 400px;">
+        <div class="chart-wrap" style="height:400px;">
           <canvas id="yoyChart"></canvas>
         </div>
       </div>
 
-      <!-- Annual -->
+      <!-- ROW 5: ANNUAL SUMMARY -->
       <div class="card">
         <div class="card-head">
           <span class="card-title">Annual Summary</span>
+          <span class="card-sub">Click any year to filter</span>
         </div>
-        <table class="annual-table">
-          <tbody id="annualBody"></tbody>
-        </table>
+        <div style="overflow-x:auto;">
+          <table class="annual-table" id="annualTable">
+            <thead>
+              <tr>
+                <th>Year</th>
+                <th>Income</th>
+                <th>Expenses</th>
+                <th>Invested</th>
+                <th>Net Balance</th>
+                <th>Savings %</th>
+                <th>Txns</th>
+              </tr>
+            </thead>
+            <tbody id="annualBody"></tbody>
+          </table>
+        </div>
       </div>
 
-      <!-- Transactions -->
+      <!-- ROW 6: TRANSACTIONS -->
       <div class="card">
         <div class="card-head">
           <span class="card-title">Recent Transactions</span>
-          <span id="txMeta" class="card-sub"></span>
+          <span class="card-sub" id="txMeta"></span>
         </div>
-        <table class="tx-table">
-          <tbody id="txBody"></tbody>
-        </table>
+
+        <div style="overflow-x:auto;">
+          <table class="tx-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Category</th>
+                <th>Payment</th>
+                <th style="text-align:right">Amount</th>
+              </tr>
+            </thead>
+            <tbody id="txBody"></tbody>
+          </table>
+        </div>
       </div>
+
     </div>
   </main>
 
   <div id="toastMessage" class="toast-message"></div>
 
-  script.js</script>
+  <script src="script.js"></script>
 
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      if (typeof boot === "function") boot();
-    });
-  </script>
 </body>
+
 </html>
