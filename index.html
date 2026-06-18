@@ -4,12 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>FinanceTrack — Personal Dashboard</title>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
   <header class="topbar">
@@ -50,12 +55,15 @@
   </header>
 
   <main class="page">
+
+    <!-- LOADING STATE -->
     <div id="loadingState" class="center-state">
       <div class="loader-ring"></div>
       <p>Fetching your financial history…</p>
       <p class="loading-hint">Make sure your Google Sheet is shared publicly</p>
     </div>
 
+    <!-- ERROR STATE -->
     <div id="errorState" class="center-state" style="display:none;">
       <div class="error-icon">⚠️</div>
       <p class="error-title">Could not load data</p>
@@ -64,14 +72,17 @@
         <ol>
           <li>Click "Share" → "Anyone with the link"</li>
           <li>Set permission to "Viewer"</li>
-          <li>Sheet tab name must be "Form Responses 1" or "Sheet1"</li>
-          <li>Your form must have submitted at least one response</li>
+          <li>Sheet tab must be "Form Responses 1" or "Sheet1"</li>
+          <li>You must have submitted at least one transaction</li>
         </ol>
       </div>
       <button onclick="location.reload()" class="retry-btn">⟳ Try Again</button>
     </div>
 
+    <!-- DASHBOARD -->
     <div id="dashboard" style="display:none">
+
+      <!-- VIEW LABEL -->
       <div class="view-label-row">
         <div class="view-label" id="viewLabel">—</div>
         <div class="view-desc" id="viewDesc">—</div>
@@ -80,10 +91,10 @@
       <!-- KPIs -->
       <div class="kpi-row" id="kpiRow"></div>
 
-      <!-- Insight chips -->
+      <!-- INSIGHTS -->
       <div class="chip-row" id="chipRow"></div>
 
-      <!-- Row 1: Monthly Cash Flow -->
+      <!-- Monthly Cash Flow -->
       <div class="grid-cols g11">
         <div class="card">
           <div class="card-head">
@@ -96,7 +107,22 @@
         </div>
       </div>
 
-      <!-- Row 2: Category Breakdown Charts -->
+      <!-- Category Filters ABOVE Charts (IMPORTANT FIX) -->
+      <div class="category-filter-bar">
+        <label for="expenseCategoryFilter">Expense Category:</label>
+        <select id="expenseCategoryFilter" class="category-select">
+          <option value="all">All Categories</option>
+        </select>
+      </div>
+
+      <div class="category-filter-bar">
+        <label for="incomeCategoryFilter">Income Category:</label>
+        <select id="incomeCategoryFilter" class="category-select">
+          <option value="all">All Categories</option>
+        </select>
+      </div>
+
+      <!-- Category Line Charts -->
       <div class="grid-cols g12">
         <div class="card">
           <div class="card-head">
@@ -107,6 +133,7 @@
             <canvas id="expenseCatChart"></canvas>
           </div>
         </div>
+
         <div class="card">
           <div class="card-head">
             <span class="card-title">💰 Income Breakdown</span>
@@ -118,7 +145,7 @@
         </div>
       </div>
 
-      <!-- Row 3: Daily Balance + Payment Methods -->
+      <!-- Daily Balance + Payment -->
       <div class="grid-cols g12">
         <div class="card">
           <div class="card-head"><span class="card-title">📈 Daily Balance Timeline</span></div>
@@ -126,6 +153,7 @@
             <canvas id="dailyBalanceChart"></canvas>
           </div>
         </div>
+
         <div class="card">
           <div class="card-head"><span class="card-title">💳 Payment Methods</span></div>
           <div class="chart-wrap" style="height:200px">
@@ -135,7 +163,7 @@
         </div>
       </div>
 
-      <!-- Row 4: YoY Analysis -->
+      <!-- YoY -->
       <div class="card yoy-card">
         <div class="card-head">
           <div>
@@ -149,7 +177,7 @@
         </div>
       </div>
 
-      <!-- Row 5: Annual Summary -->
+      <!-- Annual Table -->
       <div class="card">
         <div class="card-head">
           <span class="card-title">Annual Summary</span>
@@ -165,39 +193,35 @@
         </div>
       </div>
 
-      <!-- Row 6: Transactions -->
+      <!-- Recent Transactions -->
       <div class="card">
         <div class="card-head">
           <span class="card-title">Recent Transactions</span>
           <span class="card-sub" id="txMeta"></span>
         </div>
+
         <div style="overflow-x:auto">
           <table class="tx-table">
-            <thead><tr><th>Date</th><th>Type</th><th>Category</th><th>Payment</th><th style="text-align:right">Amount</th></tr></thead>
+            <thead>
+              <tr><th>Date</th><th>Type</th><th>Category</th><th>Payment</th><th style="text-align:right">Amount</th></tr>
+            </thead>
             <tbody id="txBody"></tbody>
           </table>
         </div>
-
-        <div class="category-filter-bar">
-          <label for="expenseCategoryFilter">Category:</label>
-          <select id="expenseCategoryFilter" class="category-select">
-            <option value="all">All Categories</option>
-          </select>
-        </div>
-
-        <div class="category-filter-bar">
-          <label for="incomeCategoryFilter">Category:</label>
-          <select id="incomeCategoryFilter" class="category-select">
-            <option value="all">All Categories</option>
-          </select>
-        </div> 
-  
       </div>
-    </div>
+
+    </div><!-- END DASHBOARD -->
   </main>
 
   <div id="toastMessage" class="toast-message"></div>
 
+  <!-- LOAD JS AFTER DOM -->
   <script src="script.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      if (typeof boot === "function") boot();
+    });
+  </script>
+
 </body>
 </html>
