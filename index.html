@@ -25,7 +25,7 @@
       <div class="brand">
         <div class="brand-mark">FT</div>
         <div>
-          <div class="brand-name">FinanceTrack</div>
+          <div class="brand-name">Finance  Tracker</div>
           <div class="brand-sub">Personal Ledger</div>
         </div>
       </div>
@@ -113,38 +113,25 @@
         </div>
       </div>
 
-      <!-- 🌟 INSERTED GLOBAL CATEGORY FILTERS HERE (Option A) -->
-      <div class="category-filter-bar">
-        <label for="expenseCategoryFilter">Expense Category:</label>
-        <select id="expenseCategoryFilter" class="category-select">
-          <option value="all">All Categories</option>
-        </select>
-      </div>
-
-      <div class="category-filter-bar">
-        <label for="incomeCategoryFilter">Income Category:</label>
-        <select id="incomeCategoryFilter" class="category-select">
-          <option value="all">All Categories</option>
-        </select>
-      </div>
-      <!-- END FILTER INSERTION -->
-
-      <!-- ROW 2: CATEGORY BREAKDOWN -->
-      <div class="grid-cols g12">
-
+      <!-- ROW 2: MONTHLY EXPENSE BREAKDOWN - FULL WIDTH -->
+      <div class="grid-cols g11">
         <div class="card">
           <div class="card-head">
-            <span class="card-title">📊 Expense Breakdown</span>
+            <span class="card-title">📊 Monthly Expense Breakdown</span>
             <span class="card-sub" id="expCatTotal"></span>
           </div>
           <div class="chart-wrap" style="height:350px;">
             <canvas id="expenseCatChart"></canvas>
           </div>
         </div>
+      </div>
+
+      <!-- ROW 3: MONTHLY INCOME BREAKDOWN + PAYMENT METHODS - SIDE BY SIDE -->
+      <div class="grid-cols g12">
 
         <div class="card">
           <div class="card-head">
-            <span class="card-title">💰 Income Breakdown</span>
+            <span class="card-title">💰 Monthly Income Breakdown</span>
             <span class="card-sub" id="incCatTotal"></span>
           </div>
           <div class="chart-wrap" style="height:350px;">
@@ -152,29 +139,35 @@
           </div>
         </div>
 
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">💳 Payment Methods</span>
+            <span class="card-sub">Distribution by payment type</span>
+          </div>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:16px;">
+            <div class="chart-wrap" style="height:220px; width:100%; max-width:280px;">
+              <canvas id="paymentChart"></canvas>
+            </div>
+            <div class="donut-leg" id="paymentLegend" style="width:100%;"></div>
+          </div>
+        </div>
+
       </div>
 
-      <!-- ROW 3: DAILY BALANCE + PAYMENT -->
-      <div class="grid-cols g12">
-
+      <!-- ROW 4: DAILY BALANCE - FULL WIDTH -->
+      <div class="grid-cols g11">
         <div class="card">
-          <div class="card-head"><span class="card-title">📈 Daily Balance Timeline</span></div>
-          <div class="chart-wrap" style="height:250px;">
+          <div class="card-head">
+            <span class="card-title">📈 Daily Balance Timeline</span>
+            <span class="card-sub">Running balance with day-to-day carryover</span>
+          </div>
+          <div class="chart-wrap" style="height:300px;">
             <canvas id="dailyBalanceChart"></canvas>
           </div>
         </div>
-
-        <div class="card">
-          <div class="card-head"><span class="card-title">💳 Payment Methods</span></div>
-          <div class="chart-wrap" style="height:200px;">
-            <canvas id="paymentChart"></canvas>
-          </div>
-          <div class="donut-leg" id="paymentLegend"></div>
-        </div>
-
       </div>
 
-      <!-- ROW 4: YOY ANALYSIS -->
+      <!-- ROW 5: YOY ANALYSIS -->
       <div class="card yoy-card">
         <div class="card-head">
           <div>
@@ -188,7 +181,7 @@
         </div>
       </div>
 
-      <!-- ROW 5: ANNUAL SUMMARY -->
+      <!-- ROW 6: ANNUAL SUMMARY -->
       <div class="card">
         <div class="card-head">
           <span class="card-title">Annual Summary</span>
@@ -212,7 +205,7 @@
         </div>
       </div>
 
-      <!-- ROW 6: TRANSACTIONS -->
+      <!-- ROW 7: TRANSACTIONS -->
       <div class="card">
         <div class="card-head">
           <span class="card-title">Recent Transactions</span>
