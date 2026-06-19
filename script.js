@@ -1,38 +1,29 @@
 /********************************************************************************************
- * FinanceTrack — Deep‑Refactored Script.js  (Section 1/8)
- * Full Feature Parity + New Line Charts + Category Filters
- * Refactor Mode: A2 (Deep Refactor, Single‑File Architecture)
- *
- * This file maintains ALL original features from the uploaded script.js (turn9search1),
- * while reorganizing everything for clarity, maintainability, and performance.
+ * FinanceTrack — COMPLETE FIXED VERSION
+ * Fixed: Text visibility in legends, Daily Balance shows up to today
  ********************************************************************************************/
-
 
 /* ==========================================================================================
    CONFIGURATION
    ========================================================================================== */
 
-const SHEET_ID  = "1bHv3ITXTmXkrSLgHUbD_CrzEWdgxfFBeJv9RYyjLBfc";     // same as original [1](https://ingov-my.sharepoint.com/personal/dlamichhane_indot_in_gov/Documents/Microsoft%20Copilot%20Chat%20Files/script.js)
-const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`; // [1](https://ingov-my.sharepoint.com/personal/dlamichhane_indot_in_gov/Documents/Microsoft%20Copilot%20Chat%20Files/script.js)
-
-
+const SHEET_ID  = "1bHv3ITXTmXkrSLgHUbD_CrzEWdgxfFBeJv9RYyjLBfc";
+const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
 
 /* ==========================================================================================
    STATE MANAGEMENT
    ========================================================================================== */
 
-let ALL_TXNS            = [];   // all parsed transactions from Google Sheet [1](https://ingov-my.sharepoint.com/personal/dlamichhane_indot_in_gov/Documents/Microsoft%20Copilot%20Chat%20Files/script.js)
-let ALL_YEARS           = [];   // unique years detected from dataset     [1](https://ingov-my.sharepoint.com/personal/dlamichhane_indot_in_gov/Documents/Microsoft%20Copilot%20Chat%20Files/script.js)
+let ALL_TXNS            = [];
+let ALL_YEARS           = [];
 let SELECTED_YEAR       = "all";
 let SELECTED_MONTH      = "all";
 
-let YEAR_WINDOW_START   = 0;    // index of first visible year pill  [1](https://ingov-my.sharepoint.com/personal/dlamichhane_indot_in_gov/Documents/Microsoft%20Copilot%20Chat%20Files/script.js)
-let PILLS_VISIBLE       = 5;    // number of year pills visible      [1](https://ingov-my.sharepoint.com/personal/dlamichhane_indot_in_gov/Documents/Microsoft%20Copilot%20Chat%20Files/script.js)
+let YEAR_WINDOW_START   = 0;
+let PILLS_VISIBLE       = 5;
 
-let charts              = {};   // will store all Chart.js instances  [1](https://ingov-my.sharepoint.com/personal/dlamichhane_indot_in_gov/Documents/Microsoft%20Copilot%20Chat%20Files/script.js)
-let autoRefreshInterval = null; // auto-refresh timer handle          [1](https://ingov-my.sharepoint.com/personal/dlamichhane_indot_in_gov/Documents/Microsoft%20Copilot%20Chat%20Files/script.js)
-
-
+let charts              = {};
+let autoRefreshInterval = null;
 
 /* ==========================================================================================
    UTILITY: DOM HELPERS
@@ -42,9 +33,6 @@ const $ = (id) => document.getElementById(id);
 const qs = (sel) => document.querySelector(sel);
 const qsa = (sel) => document.querySelectorAll(sel);
 
-
-
-// Toast Notifications (same behavior, cleaner implementation) [1](https://ingov-my.sharepoint.com/personal/dlamichhane_indot_in_gov/Documents/Microsoft%20Copilot%20Chat%20Files/script.js)
 function showToast(message, type = "success") {
     const toast = $("toastMessage");
     if (!toast) return;
@@ -56,12 +44,9 @@ function showToast(message, type = "success") {
     setTimeout(() => toast.classList.remove("show"), 3000);
 }
 
-
-
 /* ==========================================================================================
-   UTILITY: SAFE JSON PARSING FOR GOOGLE GVIZ API
+   UTILITY: SAFE JSON PARSING
    ========================================================================================== */
-// Google Visualization API wraps JSON inside JS function calls; this safely extracts it.  [1](https://ingov-my.sharepoint.com/personal/dlamichhane_indot_in_gov/Documents/Microsoft%20Copilot%20Chat%20Files/script.js)
 
 function getJSON(raw) {
     try {
@@ -74,38 +59,48 @@ function getJSON(raw) {
     }
 }
 
-
-
 /* ==========================================================================================
    UTILITY: DATE HELPERS
    ========================================================================================== */
 
-// Handles Google "Date(YYYY,MM,DD)" format. 100% matching original implementation. [1](https://ingov-my.sharepoint.com/personal/dlamichhane_indot_in_gov/Documents/Microsoft%20Copilot%20Chat%20Files/script.js)
 function parseGVizDate(v) {
     if (!v) return null;
+    const str = String(v).trim();
 
-    const m = String(v).match(/Date\((\d+),(\d+),(\d+)\)/);
-    if (m) return new Date(+m[1], +m[2], +m[3]);
+    const gviz = str.match(/Date\((\d+),(\d+),(\d+)\)/);
+    if (gviz) {
+        return new Date(+gviz[1], +gviz[2], +gviz[3]);
+    }
 
-    const d = new Date(v);
+    const dmy = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+    if (dmy) {
+        const day = +dmy[1], month = +dmy[2], year = +dmy[3];
+        if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+            return new Date(year, month - 1, day);
+        }
+    }
+
+    const mdy = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (mdy) {
+        const month = +mdy[1], day = +mdy[2], year = +mdy[3];
+        if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+            return new Date(year, month - 1, day);
+        }
+    }
+
+    const d = new Date(str);
     return isNaN(d) ? null : d;
 }
 
-
-// Month key: "YYYY-MM"  (same logic, extracted for readability) [1](https://ingov-my.sharepoint.com/personal/dlamichhane_indot_in_gov/Documents/Microsoft%20Copilot%20Chat%20Files/script.js)
 function monthKey(d) {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
-
-// Turns "2024-04" → "Apr"  (month-only label)  [1](https://ingov-my.sharepoint.com/personal/dlamichhane_indot_in_gov/Documents/Microsoft%20Copilot%20Chat%20Files/script.js)
 function monthLabel(k) {
     const [y, m] = k.split("-");
     return new Date(+y, +m - 1).toLocaleString("default", { month: "short" });
 }
 
-
-// Pretty full date (same spec as original) [1](https://ingov-my.sharepoint.com/personal/dlamichhane_indot_in_gov/Documents/Microsoft%20Copilot%20Chat%20Files/script.js)
 function fmtDate(d) {
     if (!d) return "—";
     return d.toLocaleDateString("en-US", {
@@ -115,13 +110,14 @@ function fmtDate(d) {
     });
 }
 
-
+function dateKey(d) {
+    return d.toISOString().split("T")[0];
+}
 
 /* ==========================================================================================
    UTILITY: NUMBER FORMATTERS
    ========================================================================================== */
 
-// "$3,000" or "$3,000.24" (same as original fmtMoney)  [1](https://ingov-my.sharepoint.com/personal/dlamichhane_indot_in_gov/Documents/Microsoft%20Copilot%20Chat%20Files/script.js)
 function fmtMoney(n, decimals = 0) {
     const abs = Math.abs(n);
     const formatted = abs.toLocaleString("en-US", {
@@ -131,8 +127,6 @@ function fmtMoney(n, decimals = 0) {
     return (n < 0 ? "-" : "") + "$" + formatted;
 }
 
-
-// Short format: "$3k", "$2.4M", etc. (matches original fmtShort) [1](https://ingov-my.sharepoint.com/personal/dlamichhane_indot_in_gov/Documents/Microsoft%20Copilot%20Chat%20Files/script.js)
 function fmtShort(n) {
     const abs = Math.abs(n);
     const sign = n < 0 ? "-" : "";
@@ -142,102 +136,118 @@ function fmtShort(n) {
     return `${sign}$${Math.round(abs)}`;
 }
 
-
-// Capitalizes strings ("income" → "Income")  [1](https://ingov-my.sharepoint.com/personal/dlamichhane_indot_in_gov/Documents/Microsoft%20Copilot%20Chat%20Files/script.js)
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
-
-
 
 /* ==========================================================================================
    UTILITY: CHART MANAGEMENT
    ========================================================================================== */
 
-// Destroy & remove chart by ID (same behavior, cleaner version)  [1](https://ingov-my.sharepoint.com/personal/dlamichhane_indot_in_gov/Documents/Microsoft%20Copilot%20Chat%20Files/script.js)
 function destroyChart(id) {
     if (charts[id]) {
         charts[id].destroy();
         delete charts[id];
     }
 }
-/********************************************************************************************
- * SECTION 2 — DATA PARSING & TRANSFORMATION
- * Cleaned + more reliable versions of:
- * - parseRows()
- * - computeStats()
- * - getFilteredTxns()
- ********************************************************************************************/
 
+function prepareCanvas(chartId) {
+    const el = document.getElementById(chartId);
+    if (!el) return null;
+    destroyChart(chartId);
+    return el;
+}
+
+function createChart(ctx, config) {
+    const instance = new Chart(ctx, config);
+    return instance;
+}
 
 /* ==========================================================================================
-   PARSE RAW GOOGLE SHEET ROWS → UNIFIED TRANSACTION OBJECTS
+   DATA PARSING & TRANSFORMATION - UPDATED FOR YOUR SHEET STRUCTURE
    ========================================================================================== */
 
-function parseRows(rows) {
+function parseRows(rows, cols) {
     if (!rows || rows.length === 0) return [];
 
-    // Identify header row
-    let header = null;
-    let startIndex = 0;
-
-    for (let i = 0; i < Math.min(rows.length, 10); i++) {
-        const c = rows[i]?.c;
-        if (c && c[0] && c[0].v === "Timestamp") {
-            header = c;
-            startIndex = i + 1;
-            break;
-        }
-    }
-
-    // Column index mapping
     const colIndex = {
         timestamp: -1,
         type: -1,
         date: -1,
         amount: -1,
-        category: -1,
+        expenseCategory: -1,
+        incomeCategory: -1,
         payment: -1
     };
 
-    // If header exists → map columns
-    if (header) {
-        header.forEach((cell, i) => {
-            if (!cell || !cell.v) return;
-            const v = cell.v.toString().toLowerCase();
-            if (v.includes("timestamp")) colIndex.timestamp = i;
-            else if (v.includes("type")) colIndex.type = i;
-            else if (v.includes("date")) colIndex.date = i;
-            else if (v.includes("amount")) colIndex.amount = i;
-            else if (v.includes("category")) colIndex.category = i;
-            else if (v.includes("payment")) colIndex.payment = i;
-        });
-
-        // fallback defaults
-        if (colIndex.type === -1) colIndex.type = 1;
-        if (colIndex.date === -1) colIndex.date = 2;
-        if (colIndex.amount === -1) colIndex.amount = 3;
+    function mapHeaderCell(label, i) {
+        if (!label) return;
+        const v = label.toString().toLowerCase().trim();
+        
+        if (v.includes("timestamp")) colIndex.timestamp = i;
+        else if (v.includes("transaction type") || v.includes("type")) colIndex.type = i;
+        else if (v.includes("date")) colIndex.date = i;
+        else if (v.includes("amount") || v.includes("$")) colIndex.amount = i;
+        else if (v.includes("expense categories")) colIndex.expenseCategory = i;
+        else if (v.includes("income categories")) colIndex.incomeCategory = i;
+        else if (v.includes("payment method")) colIndex.payment = i;
     }
 
-    // Parse rows
-    const parsed = rows.slice(startIndex).map(r => {
+    let startIndex = 0;
+    let foundHeaders = false;
+    
+    for (let i = 0; i < Math.min(rows.length, 10); i++) {
+        const c = rows[i]?.c;
+        if (c) {
+            const headerValues = c.map(cell => cell?.v?.toString().toLowerCase().trim() || "");
+            if (headerValues.some(v => v.includes("timestamp") || v.includes("transaction type"))) {
+                headerValues.forEach((v, idx) => mapHeaderCell(v, idx));
+                startIndex = i + 1;
+                foundHeaders = true;
+                break;
+            }
+        }
+    }
+
+    if (!foundHeaders && cols && cols.some(c => c && c.label)) {
+        cols.forEach((c, i) => mapHeaderCell(c?.label, i));
+    }
+
+    if (colIndex.type === -1) colIndex.type = 1;
+    if (colIndex.date === -1) colIndex.date = 2;
+    if (colIndex.amount === -1) colIndex.amount = 3;
+    if (colIndex.expenseCategory === -1) colIndex.expenseCategory = 4;
+    if (colIndex.incomeCategory === -1) colIndex.incomeCategory = 5;
+    if (colIndex.payment === -1) colIndex.payment = 6;
+
+    console.log("Final column mapping:", colIndex);
+
+    const parsed = rows.slice(startIndex).map((r, rowIndex) => {
         const c = r.c;
         if (!c) return null;
 
         const type = (c[colIndex.type]?.v || "").toString().trim().toLowerCase();
         const date = parseGVizDate(c[colIndex.date]?.v);
-        const amt  = Number(c[colIndex.amount]?.v);
-        const cat  = (colIndex.category >= 0 && c[colIndex.category]?.v) 
-                        ? c[colIndex.category].v.toString().trim()
-                        : cap(type);
-        const pay  = (colIndex.payment >= 0 && c[colIndex.payment]?.v)
-                        ? c[colIndex.payment].v.toString().trim()
-                        : "Unknown";
+        const amt = Number(c[colIndex.amount]?.v);
+        
+        let cat = "";
+        if (colIndex.expenseCategory >= 0 && c[colIndex.expenseCategory]?.v) {
+            cat = c[colIndex.expenseCategory].v.toString().trim();
+        } else if (colIndex.incomeCategory >= 0 && c[colIndex.incomeCategory]?.v) {
+            cat = c[colIndex.incomeCategory].v.toString().trim();
+        }
+        if (!cat) {
+            cat = cap(type);
+        }
+
+        const pay = (colIndex.payment >= 0 && c[colIndex.payment]?.v)
+            ? c[colIndex.payment].v.toString().trim()
+            : "Unknown";
 
         if (!type || !date || isNaN(amt) || amt <= 0) return null;
 
         return {
-            type,
-            date,
-            amt,
+            type: type,
+            date: date,
+            amt: amt,
             category: cat,
             payment: pay,
             year: date.getFullYear()
@@ -246,10 +256,10 @@ function parseRows(rows) {
     .filter(Boolean)
     .sort((a, b) => b.date - a.date);
 
+    console.log(`✅ Parsed ${parsed.length} transactions`);
+
     return parsed;
 }
-
-
 
 /* ==========================================================================================
    COMPUTE DASHBOARD STATISTICS
@@ -310,7 +320,6 @@ function computeStats(txns) {
         ? ((totalIncome - totalExpense) / totalIncome) * 100
         : 0;
 
-    // Identify top category
     const topCat = Object.entries(categoryTotals)
         .sort((a, b) => b[1] - a[1])[0] || null;
 
@@ -331,10 +340,8 @@ function computeStats(txns) {
     };
 }
 
-
-
 /* ==========================================================================================
-   FILTERED TRANSACTIONS (year + month)
+   FILTERED TRANSACTIONS
    ========================================================================================== */
 
 function getFilteredTxns() {
@@ -348,17 +355,9 @@ function getFilteredTxns() {
 
     return tx;
 }
-/********************************************************************************************
- * SECTION 3 — FILTERING LOGIC (YEAR, MONTH, CATEGORY)
- * This section includes:
- *  - Year navigation
- *  - Month dropdown
- *  - Category dropdowns for Expense & Income (full-width bars, D2)
- ********************************************************************************************/
-
 
 /* ==========================================================================================
-   YEAR NAVIGATION (Year Pills)
+   YEAR NAVIGATION
    ========================================================================================== */
 
 function buildYearNav() {
@@ -368,7 +367,6 @@ function buildYearNav() {
 
     if (!pills) return;
 
-    // Enable/disable arrows
     if (prev) prev.disabled = YEAR_WINDOW_START === 0;
     if (next) next.disabled = YEAR_WINDOW_START + PILLS_VISIBLE >= ALL_YEARS.length;
 
@@ -379,14 +377,12 @@ function buildYearNav() {
 
     pills.innerHTML = "";
 
-    // "All" pill
     const allBtn = document.createElement("button");
     allBtn.textContent = "All";
     allBtn.className = "year-pill all-pill" + (SELECTED_YEAR === "all" ? " active" : "");
     allBtn.onclick = () => selectYear("all");
     pills.appendChild(allBtn);
 
-    // Year pills
     visibleYears.forEach(y => {
         const btn = document.createElement("button");
         btn.textContent = y;
@@ -396,8 +392,6 @@ function buildYearNav() {
     });
 }
 
-
-// Called from year buttons
 function selectYear(year) {
     SELECTED_YEAR = year;
     SELECTED_MONTH = "all";
@@ -409,8 +403,6 @@ function selectYear(year) {
     showToast(`Showing ${year === "all" ? "all years" : year}`, "success");
 }
 
-
-// Scroll years left/right
 window.shiftYear = function (dir) {
     const maxStart = Math.max(0, ALL_YEARS.length - PILLS_VISIBLE);
 
@@ -422,8 +414,6 @@ window.shiftYear = function (dir) {
     buildYearNav();
 };
 
-
-
 /* ==========================================================================================
    MONTH FILTER DROPDOWN
    ========================================================================================== */
@@ -432,19 +422,18 @@ function populateMonthFilter() {
     const monthSelect = $("monthFilter");
     if (!monthSelect) return;
 
-    // Determine which txns to read months from
     const txns = SELECTED_YEAR === "all"
         ? ALL_TXNS
         : ALL_TXNS.filter(t => t.year === SELECTED_YEAR);
 
     const months = [...new Set(txns.map(t => monthKey(t.date)))].sort();
 
-    // Reset
     monthSelect.innerHTML = `<option value="all">📅 All Months</option>`;
 
-    // Current month auto-select logic
     const now = new Date();
     const keyNow = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+
+    let foundCurrent = false;
 
     months.forEach(m => {
         const opt = document.createElement("option");
@@ -454,193 +443,91 @@ function populateMonthFilter() {
         if (m === keyNow) {
             opt.selected = true;
             SELECTED_MONTH = m;
+            foundCurrent = true;
         }
 
         monthSelect.appendChild(opt);
     });
 
-    // If no month auto-selected, choose latest
-    if (SELECTED_MONTH === "all" && months.length > 0) {
+    if (!foundCurrent && months.length > 0) {
         SELECTED_MONTH = months[months.length - 1];
         monthSelect.value = SELECTED_MONTH;
     }
 
-    // Change handler
+    monthSelect.onchange = null;
     monthSelect.onchange = (e) => {
         SELECTED_MONTH = e.target.value;
         renderDashboard();
         showToast(
-            `Filtered to ${
-                SELECTED_MONTH === "all" ? "all months" : monthLabel(SELECTED_MONTH)
-            }`,
+            `Filtered to ${SELECTED_MONTH === "all" ? "all months" : monthLabel(SELECTED_MONTH)}`,
             "success"
         );
     };
 }
 
-
-
 /* ==========================================================================================
-   CATEGORY FILTERS (D2 FULL‑WIDTH FILTER BARS)
-   ========================================================================================== */
-
-function populateCategoryFilters(txns) {
-    const expenseSelect = $("expenseCategoryFilter");
-    const incomeSelect  = $("incomeCategoryFilter");
-
-    if (!expenseSelect || !incomeSelect) return;
-
-    const expenseCats = [...new Set(txns.filter(t => t.type === "expense").map(t => t.category))];
-    const incomeCats  = [...new Set(txns.filter(t => t.type === "income").map(t => t.category))];
-
-    // Reset
-    expenseSelect.innerHTML = `<option value="all">All Categories</option>`;
-    incomeSelect.innerHTML  = `<option value="all">All Categories</option>`;
-
-    // Insert expense categories
-    expenseCats.forEach(cat => {
-        const o = document.createElement("option");
-        o.value = cat;
-        o.textContent = cat;
-        expenseSelect.appendChild(o);
-    });
-
-    // Insert income categories
-    incomeCats.forEach(cat => {
-        const o = document.createElement("option");
-        o.value = cat;
-        o.textContent = cat;
-        incomeSelect.appendChild(o);
-    });
-
-    // Attach handlers
-    expenseSelect.onchange = () => {
-        renderExpenseLineChart();  // new line chart version
-    };
-
-    incomeSelect.onchange = () => {
-        renderIncomeLineChart();   // new line chart version
-    };
-/********************************************************************************************
- * SECTION 4 — CHART BUILDER UTILITIES
- * Provides:
- *  - color palettes
- *  - reusable dataset builders
- *  - safe chart instantiation helpers
- *  - canvas setup helpers
- ********************************************************************************************/
-
-
-/* ==========================================================================================
-   SHARED COLOR PALETTES
+   COLOR PALETTES - More attractive colors for income
    ========================================================================================== */
 
 const COLORS = {
     income:      "#10b981",
     expense:     "#ef4444",
     investment:  "#3b82f6",
-    purple:      "#8b5cf6",
-
-    // Palettes for category lines
-    categorySet1: [
-        "#ef4444", "#f97316", "#f59e0b", "#8b5cf6", "#06b6d4",
-        "#0ea5e9", "#6366f1", "#14b8a6", "#16a34a", "#65a30d"
-    ],
-    categorySet2: [
-        "#10b981", "#14b8a6", "#3b82f6", "#8b5cf6", "#06b6d4",
-        "#0ea5e9", "#6366f1", "#16a34a", "#65a30d", "#059669"
-    ]
+    purple:      "#8b5cf6"
 };
 
+// More attractive income colors (greens, teals, blues, purples)
+const INCOME_COLORS = [
+    "#059669", // Emerald
+    "#0d9488", // Teal
+    "#0891b2", // Cyan
+    "#2563eb", // Blue
+    "#7c3aed", // Purple
+    "#0ea5e9", // Sky Blue
+    "#14b8a6", // Teal Light
+    "#06b6d4", // Cyan Light
+    "#6366f1", // Indigo
+    "#8b5cf6", // Violet
+    "#10b981", // Emerald Light
+    "#22d3ee", // Cyan Bright
+];
 
+// Expense colors (warmer colors)
+const EXPENSE_COLORS = [
+    "#dc2626", "#ea580c", "#d97706", "#9333ea", "#0891b2",
+    "#2563eb", "#4f46e5", "#0d9488", "#059669", "#65a30d",
+    "#db2777", "#e11d48", "#f97316", "#f59e0b", "#a855f7"
+];
 
-/* ==========================================================================================
-   CANVAS RESET UTIL: ensures clean chart rendering
-   ========================================================================================== */
-
-function prepareCanvas(chartId) {
-    const el = document.getElementById(chartId);
-    if (!el) return null;
-
-    destroyChart(chartId);
-    return el;
+function getIncomeColor(index) {
+    return INCOME_COLORS[index % INCOME_COLORS.length];
 }
 
-
-
-/* ==========================================================================================
-   GENERIC DATASET BUILDERS
-   ========================================================================================== */
-
-// Build a simple line dataset
-function buildLineDataset({ label, data, color, fill = false, tension = 0.35 }) {
-    return {
-        label,
-        data,
-        borderColor: color,
-        backgroundColor: fill ? color + "33" : color,
-        borderWidth: 3,
-        tension,
-        fill,
-        pointRadius: 3,
-        pointHoverRadius: 5,
-        pointBackgroundColor: color,
-        pointBorderWidth: 1,
-        pointBorderColor: "#fff"
-    };
+function getExpenseColor(index) {
+    return EXPENSE_COLORS[index % EXPENSE_COLORS.length];
 }
 
+function getCategoryColor(index) {
+    return EXPENSE_COLORS[index % EXPENSE_COLORS.length];
+}
 
-// Build a simple bar dataset
+/* ==========================================================================================
+   DATASET BUILDERS
+   ========================================================================================== */
+
 function buildBarDataset({ label, data, color }) {
     return {
         label,
         data,
         backgroundColor: color,
-        borderRadius: 8
+        borderColor: color,
+        borderWidth: 1,
+        borderRadius: 4
     };
 }
 
-
-
 /* ==========================================================================================
-   INITIALIZING A CHART.JS INSTANCE SAFELY
-   ========================================================================================== */
-
-function createChart(ctx, config) {
-    return new Chart(ctx, config);
-}
-
-
-
-/* ==========================================================================================
-   REUSABLE SCALES FOR CONSISTENCY
-   ========================================================================================== */
-
-const TREND_SCALES = {
-    x: {
-        grid: { display: false },
-        ticks: {
-            maxRotation: 45,
-            minRotation: 45,
-            autoSkip: true,
-            maxTicksLimit: 12
-        }
-    },
-    y: {
-        ticks: {
-            callback: (v) => fmtShort(v),
-            color: "#475569"
-        },
-        grid: { color: "#e2e8f0" }
-    }
-/********************************************************************************************
- * SECTION 5 — MONTHLY CASHFLOW + EXPENSE TREND LINE CHART
- ********************************************************************************************/
-
-
-/* ==========================================================================================
-   MONTHLY CASHFLOW BAR CHART  (Income vs Expense vs Investment)
+   MONTHLY CASHFLOW CHART
    ========================================================================================== */
 
 function renderMonthly(stats) {
@@ -667,7 +554,7 @@ function renderMonthly(stats) {
         }),
     ];
 
-    createChart(ctx, {
+    const chart = createChart(ctx, {
         type: "bar",
         data: { labels, datasets },
         options: {
@@ -685,179 +572,214 @@ function renderMonthly(stats) {
                 x: { grid: { display: false } },
                 y: {
                     ticks: { callback: (v) => fmtShort(v) },
+                    beginAtZero: true
                 }
             }
         }
     });
+    charts.monthlyChart = chart;
 }
-
-
 
 /* ==========================================================================================
-   NEW EXPENSE TREND LINE CHART (replaces old bar chart)
+   MONTHLY EXPENSE BREAKDOWN - DYNAMIC CATEGORIES
    ========================================================================================== */
 
-// This function REPLACES your old renderExpenseCatChart(), but we preserve the
-// original FUNCTION NAME for compatibility across your dashboard.
-//
-// The new version:
-//  ✔ Line chart over time (month-by-month)
-//  ✔ Full-width category filter (D2)
-//  ✔ Shows either ALL categories or one selected category
-//  ✔ Uses new chart utilities
-
 function renderExpenseCatChart(stats) {
-    renderExpenseLineChart(stats);
-}
-
-
-// Actual implementation of the line chart:
-function renderExpenseLineChart(statsOverride = null) {
     const txns = getFilteredTxns();
-    const stats = statsOverride || computeStats(txns);
+    const statsLocal = stats || computeStats(txns);
 
     const ctx = prepareCanvas("expenseCatChart");
     if (!ctx) return;
 
-    const categorySelect = document.getElementById("expenseCategoryFilter");
-    const selectedCat = categorySelect ? categorySelect.value : "all";
-
-    const months = stats.months;
+    const months = statsLocal.months;
     if (!months.length) return;
 
-    // Determine categories to draw
-    const categories = selectedCat === "all"
-        ? [...new Set(txns.filter(t => t.type === "expense").map(t => t.category))]
-        : [selectedCat];
+    const categories = [...new Set(txns.filter(t => t.type === "expense").map(t => t.category))];
+    categories.sort();
 
-    // Build dataset list
     const datasets = categories.map((cat, idx) => {
-        // Build array like: [AprAmount, MayAmount, JunAmount, ...]
-        const dataPoints = months.map(m =>
-            txns
+        const dataPoints = months.map(m => {
+            return txns
                 .filter(t => t.type === "expense" && t.category === cat && monthKey(t.date) === m)
-                .reduce((sum, t) => sum + t.amt, 0)
-        );
+                .reduce((sum, t) => sum + t.amt, 0);
+        });
 
-        return buildLineDataset({
+        return {
             label: cat,
             data: dataPoints,
-            color: COLORS.categorySet1[idx % COLORS.categorySet1.length],
-            fill: false,
-            tension: 0.35
-        });
+            backgroundColor: getExpenseColor(idx),
+            borderColor: getExpenseColor(idx),
+            borderWidth: 1,
+            borderRadius: 4
+        };
     });
 
-    // Total header (optional)
+    const labels = months.map(monthLabel);
+
     const totalSpan = document.getElementById("expCatTotal");
     if (totalSpan) {
         const total = txns
             .filter(t => t.type === "expense")
             .reduce((s, t) => s + t.amt, 0);
 
-        const catCount = new Set(txns.filter(t => t.type === "expense").map(t => t.category)).size;
+        const catCount = categories.length;
 
-        totalSpan.innerHTML = `Total: ${fmtMoney(total)} · ${catCount} categories`;
+        totalSpan.innerHTML = `Total: ${fmtMoney(total)} · ${catCount} categories · Monthly totals`;
     }
 
-    // Create the chart
-    createChart(ctx, {
-        type: "line",
+    const chart = createChart(ctx, {
+        type: "bar",
         data: {
-            labels: months.map(monthLabel),
-            datasets
+            labels: labels,
+            datasets: datasets
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { display: true }
+                legend: { 
+                    display: true, 
+                    position: "top",
+                    labels: {
+                        boxWidth: 12,
+                        padding: 10,
+                        font: { size: 11, weight: '500' },
+                        color: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim() || '#475569'
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => {
+                            if (ctx.parsed.y === 0) return `${ctx.dataset.label}: $0`;
+                            return `${ctx.dataset.label}: ${fmtMoney(ctx.parsed.y, 2)}`;
+                        }
+                    }
+                }
             },
-            scales: TREND_SCALES
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: {
+                        maxRotation: 45,
+                        minRotation: 45,
+                        color: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim() || '#475569'
+                    }
+                },
+                y: {
+                    ticks: {
+                        callback: (v) => fmtShort(v),
+                        color: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim() || '#475569'
+                    },
+                    grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--border-light').trim() || '#e2e8f0' },
+                    beginAtZero: true
+                }
+            }
         }
     });
+    charts.expenseCatChart = chart;
 }
-  /********************************************************************************************
- * SECTION 6 — INCOME TREND LINE CHART + DAILY BALANCE TIMELINE
- ********************************************************************************************/
-
 
 /* ==========================================================================================
-   NEW INCOME TREND LINE CHART (replaces old bar chart)
+   MONTHLY INCOME BREAKDOWN - WITH ATTRACTIVE COLORS
    ========================================================================================== */
 
-function renderIncomeCatChart() {
-    // Keep original function name, but call our new version:
-    renderIncomeLineChart();
-}
-
-function renderIncomeLineChart(statsOverride = null) {
+function renderIncomeCatChart(stats) {
     const txns = getFilteredTxns();
-    const stats = statsOverride || computeStats(txns);
+    const statsLocal = stats || computeStats(txns);
 
     const ctx = prepareCanvas("incomeCatChart");
     if (!ctx) return;
 
-    const categorySelect = document.getElementById("incomeCategoryFilter");
-    const selectedCat = categorySelect ? categorySelect.value : "all";
-
-    const months = stats.months;
+    const months = statsLocal.months;
     if (!months.length) return;
 
-    const categories = selectedCat === "all"
-        ? [...new Set(txns.filter(t => t.type === "income").map(t => t.category))]
-        : [selectedCat];
+    const categories = [...new Set(txns.filter(t => t.type === "income").map(t => t.category))];
+    categories.sort();
 
     const datasets = categories.map((cat, idx) => {
-        const dataPoints = months.map(m =>
-            txns
+        const dataPoints = months.map(m => {
+            return txns
                 .filter(t => t.type === "income" && t.category === cat && monthKey(t.date) === m)
-                .reduce((s, t) => s + t.amt, 0)
-        );
+                .reduce((sum, t) => sum + t.amt, 0);
+        });
 
-        return buildLineDataset({
+        return {
             label: cat,
             data: dataPoints,
-            color: COLORS.categorySet2[idx % COLORS.categorySet2.length],
-            fill: false,
-            tension: 0.35
-        });
+            backgroundColor: getIncomeColor(idx),
+            borderColor: getIncomeColor(idx),
+            borderWidth: 1,
+            borderRadius: 4
+        };
     });
 
-    // Update header information
+    const labels = months.map(monthLabel);
+
     const totalSpan = document.getElementById("incCatTotal");
     if (totalSpan) {
         const total = txns
             .filter(t => t.type === "income")
             .reduce((s, t) => s + t.amt, 0);
 
-        const catCount = new Set(txns.filter(t => t.type === "income").map(t => t.category)).size;
+        const catCount = categories.length;
 
-        totalSpan.innerHTML = `Total: ${fmtMoney(total)} · ${catCount} categories`;
+        totalSpan.innerHTML = `Total: ${fmtMoney(total)} · ${catCount} categories · Monthly totals`;
     }
 
-    // Render chart
-    createChart(ctx, {
-        type: "line",
+    const chart = createChart(ctx, {
+        type: "bar",
         data: {
-            labels: months.map(monthLabel),
-            datasets
+            labels: labels,
+            datasets: datasets
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { display: true }
+                legend: { 
+                    display: true, 
+                    position: "top",
+                    labels: {
+                        boxWidth: 12,
+                        padding: 10,
+                        font: { size: 11, weight: '500' },
+                        color: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim() || '#475569'
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => {
+                            if (ctx.parsed.y === 0) return `${ctx.dataset.label}: $0`;
+                            return `${ctx.dataset.label}: ${fmtMoney(ctx.parsed.y, 2)}`;
+                        }
+                    }
+                }
             },
-            scales: TREND_SCALES
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: {
+                        maxRotation: 45,
+                        minRotation: 45,
+                        color: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim() || '#475569'
+                    }
+                },
+                y: {
+                    ticks: {
+                        callback: (v) => fmtShort(v),
+                        color: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim() || '#475569'
+                    },
+                    grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--border-light').trim() || '#e2e8f0' },
+                    beginAtZero: true
+                }
+            }
         }
     });
+    charts.incomeCatChart = chart;
 }
 
-
-
 /* ==========================================================================================
-   DAILY BALANCE CHART
+   DAILY BALANCE CHART - UPDATED TO SHOW UP TO TODAY
    ========================================================================================== */
 
 function renderDailyBalance() {
@@ -865,55 +787,143 @@ function renderDailyBalance() {
     if (!ctx) return;
 
     const txns = getFilteredTxns();
-    if (txns.length === 0) return;
+    
+    // Get today's date
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (txns.length === 0) {
+        // Show empty state with just today
+        const chart = createChart(ctx, {
+            type: "line",
+            data: {
+                labels: [today.toLocaleDateString("en-US", { month: "short", day: "numeric" })],
+                datasets: [{
+                    label: "Running Balance",
+                    data: [0],
+                    borderColor: "#8b5cf6",
+                    backgroundColor: "rgba(139, 92, 246, 0.15)",
+                    borderWidth: 3,
+                    tension: 0.3,
+                    fill: true,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: "#8b5cf6",
+                    pointBorderColor: "#fff",
+                    pointBorderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => ` Balance: ${fmtMoney(ctx.parsed.y, 2)}`
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: {
+                            color: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim() || '#475569'
+                        }
+                    },
+                    y: {
+                        ticks: {
+                            callback: (v) => fmtShort(v),
+                            color: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim() || '#475569'
+                        },
+                        grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--border-light').trim() || '#e2e8f0' },
+                        beginAtZero: true
+                    }
+                },
+                interaction: { mode: "index", intersect: false }
+            }
+        });
+        charts.dailyBalanceChart = chart;
+        return;
+    }
 
-    // Sort oldest → newest
+    // Sort transactions by date (oldest to newest)
     const sorted = [...txns].sort((a, b) => a.date - b.date);
-
-    // Running balance per day
+    
+    // Get the first date and use today as the last date
+    const firstDate = new Date(sorted[0].date);
+    firstDate.setHours(0, 0, 0, 0);
+    
+    // Create a map of date -> balance
+    const balanceMap = new Map();
     let running = 0;
-    const daily = new Map();
-
+    
+    // First, calculate balance for each day that has transactions
     sorted.forEach(t => {
         let delta = 0;
-
         if (t.type === "income") delta = t.amt;
         else if (t.type === "expense" || t.type === "investment") delta = -t.amt;
-
         running += delta;
-
-        const key = t.date.toISOString().split("T")[0];
-        daily.set(key, {
-            date: t.date,
-            balance: running
-        });
+        const key = dateKey(t.date);
+        balanceMap.set(key, running);
     });
-
-    const points = Array.from(daily.values()).sort((a, b) => a.date - b.date);
-
-    const labels = points.map(p =>
-        p.date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+    
+    // Now create a continuous date range from first date to TODAY
+    const dates = [];
+    const balances = [];
+    let currentDate = new Date(firstDate);
+    let lastBalance = 0;
+    
+    // Get the starting balance (before any transactions)
+    // Find the first transaction's balance
+    const firstKey = dateKey(firstDate);
+    if (balanceMap.has(firstKey)) {
+        lastBalance = balanceMap.get(firstKey);
+    }
+    
+    // Loop from first date to today
+    while (currentDate <= today) {
+        const key = dateKey(currentDate);
+        dates.push(new Date(currentDate));
+        
+        // If we have a balance for this date, use it; otherwise carry forward
+        if (balanceMap.has(key)) {
+            lastBalance = balanceMap.get(key);
+        }
+        balances.push(lastBalance);
+        
+        // Move to next day
+        currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    // Format labels
+    const labels = dates.map(d => 
+        d.toLocaleDateString("en-US", { month: "short", day: "numeric" })
     );
-    const balances = points.map(p => p.balance);
 
-    createChart(ctx, {
+    // Get theme colors
+    const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim() || '#475569';
+    const gridColor = getComputedStyle(document.documentElement).getPropertyValue('--border-light').trim() || '#e2e8f0';
+
+    const chart = createChart(ctx, {
         type: "line",
         data: {
-            labels,
+            labels: labels,
             datasets: [
                 {
                     label: "Running Balance",
                     data: balances,
-                    borderColor: COLORS.purple,
-                    backgroundColor: COLORS.purple + "22",
+                    borderColor: "#8b5cf6",
+                    backgroundColor: "rgba(139, 92, 246, 0.15)",
                     borderWidth: 3,
-                    tension: 0.35,
+                    tension: 0.3,
                     fill: true,
                     pointRadius: 3,
-                    pointHoverRadius: 5,
-                    pointBackgroundColor: COLORS.purple,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: "#8b5cf6",
                     pointBorderColor: "#fff",
-                    pointBorderWidth: 1
+                    pointBorderWidth: 2,
+                    spanGaps: true
                 }
             ]
         },
@@ -924,20 +934,38 @@ function renderDailyBalance() {
                 legend: { display: false },
                 tooltip: {
                     callbacks: {
-                        label: (ctx) =>
-                            ` Balance: ${fmtMoney(ctx.parsed.y, 2)}`
+                        label: (ctx) => {
+                            const value = ctx.parsed.y;
+                            return ` Balance: ${fmtMoney(value, 2)}`;
+                        }
                     }
                 }
             },
-            scales: TREND_SCALES,
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: {
+                        maxRotation: 45,
+                        minRotation: 45,
+                        autoSkip: true,
+                        maxTicksLimit: 30,
+                        color: textColor
+                    }
+                },
+                y: {
+                    ticks: {
+                        callback: (v) => fmtShort(v),
+                        color: textColor
+                    },
+                    grid: { color: gridColor },
+                    beginAtZero: false
+                }
+            },
             interaction: { mode: "index", intersect: false }
         }
     });
+    charts.dailyBalanceChart = chart;
 }
-  /********************************************************************************************
- * SECTION 7 — PAYMENT METHODS · YOY COMPARISON · ANNUAL SUMMARY · RECENT TXNS
- ********************************************************************************************/
-
 
 /* ==========================================================================================
    PAYMENT METHODS DOUGHNUT CHART
@@ -959,16 +987,19 @@ function renderPayment(stats) {
 
     const labels = entries.map(e => e[0]);
     const data = entries.map(e => e[1]);
-    const colors = COLORS.categorySet1.slice(0, entries.length);
+    const colors = entries.map((_, i) => getCategoryColor(i));
+    
+    // Get theme colors for legend text
+    const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim() || '#475569';
 
-    createChart(ctx, {
+    const chart = createChart(ctx, {
         type: "doughnut",
         data: {
             labels,
             datasets: [{
                 data,
                 backgroundColor: colors,
-                borderColor: "#fff",
+                borderColor: getComputedStyle(document.documentElement).getPropertyValue('--surface').trim() || '#fff',
                 borderWidth: 2
             }]
         },
@@ -976,25 +1007,37 @@ function renderPayment(stats) {
             cutout: "65%",
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { legend: { display: false } }
+            plugins: { 
+                legend: { 
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => {
+                            const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((ctx.parsed / total) * 100).toFixed(1);
+                            return `${ctx.label}: ${fmtMoney(ctx.parsed, 2)} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
         }
     });
+    charts.paymentChart = chart;
 
     if (legend) {
         legend.innerHTML = entries.map((e, i) => `
             <div class="donut-leg-item">
                 <span class="donut-leg-dot" style="background:${colors[i]}"></span>
-                <span class="donut-leg-label">${e[0]}</span>
-                <span class="donut-leg-val">${fmtMoney(e[1])}</span>
+                <span class="donut-leg-label" style="color:${textColor}">${e[0]}</span>
+                <span class="donut-leg-val" style="color:${textColor}">${fmtMoney(e[1])}</span>
             </div>
         `).join("");
     }
 }
 
-
-
 /* ==========================================================================================
-   YEAR-OVER-YEAR (YOY) BAR CHART
+   YEAR-OVER-YEAR CHART
    ========================================================================================== */
 
 function renderYoYCombined() {
@@ -1027,7 +1070,10 @@ function renderYoYCombined() {
         `;
     }
 
-    createChart(ctx, {
+    const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim() || '#475569';
+    const gridColor = getComputedStyle(document.documentElement).getPropertyValue('--border-light').trim() || '#e2e8f0';
+
+    const chart = createChart(ctx, {
         type: "bar",
         data: {
             labels: years,
@@ -1041,7 +1087,12 @@ function renderYoYCombined() {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { position: "top" },
+                legend: { 
+                    position: "top",
+                    labels: {
+                        color: textColor
+                    }
+                },
                 tooltip: {
                     callbacks: {
                         label: (ctx) => ` ${ctx.dataset.label}: ${fmtMoney(ctx.parsed.y, 2)}`
@@ -1049,14 +1100,20 @@ function renderYoYCombined() {
                 }
             },
             scales: {
-                y: { ticks: { callback: (v) => fmtShort(v) } },
-                x: { grid: { display: false } }
+                y: { 
+                    ticks: { callback: (v) => fmtShort(v), color: textColor }, 
+                    beginAtZero: true,
+                    grid: { color: gridColor }
+                },
+                x: { 
+                    grid: { display: false },
+                    ticks: { color: textColor }
+                }
             }
         }
     });
+    charts.yoyChart = chart;
 }
-
-
 
 /* ==========================================================================================
    ANNUAL SUMMARY TABLE
@@ -1112,14 +1169,13 @@ function renderAnnualTable() {
             <td class="mono c-red">${fmtMoney(totals.expense)}</td>
             <td class="mono c-blue">${fmtMoney(totals.investment)}</td>
             <td class="mono ${totals.net >= 0 ? "c-green" : "c-red"}">${fmtMoney(totals.net)}</td>
-            <td><span class="savings-badge ${
-                totals.savings >= 20 ? "good" : totals.savings >= 10 ? "ok" : "low"
-            }">${Math.round(totals.savings)}%</span></td>
+            <td><span class="savings-badge ${totals.savings >= 20 ? "good" : totals.savings >= 10 ? "ok" : "low"}">
+                ${Math.round(totals.savings)}%
+            </span></td>
             <td class="mono">${totals.count}</td>
         </tr>
     `;
 
-    // Enable row click (year selection)
     qsa("#annualBody .clickable-row").forEach(row => {
         row.addEventListener("click", () => {
             const yr = parseInt(row.dataset.year);
@@ -1128,10 +1184,81 @@ function renderAnnualTable() {
     });
 }
 
+/* ==========================================================================================
+   KPI CARDS
+   ========================================================================================== */
 
+function renderKPIs(stats) {
+    const row = $("kpiRow");
+    if (!row) return;
+
+    const kpis = [
+        { cls: "income",  icon: "Income",       val: fmtMoney(stats.income),  sub: `${stats.count} txns` },
+        { cls: "expense", icon: "Expenses",      val: fmtMoney(stats.expense), sub: stats.topCat ? `Top: ${stats.topCat[0]}` : "—" },
+        { cls: "invest",  icon: "Invested",      val: fmtMoney(stats.investment), sub: stats.months.length ? `${stats.months.length} mo. active` : "—" },
+        { cls: "balance", icon: "Net Balance",   val: fmtMoney(stats.netBalance), sub: stats.netBalance >= 0 ? "Surplus" : "Deficit", valCls: stats.netBalance >= 0 ? "pos" : "neg" },
+        { cls: "savings", icon: "Savings Rate",  val: `${Math.round(stats.savingsRate)}%`, sub: "of income saved" }
+    ];
+
+    row.innerHTML = kpis.map(k => `
+        <div class="kpi ${k.cls}">
+            <div class="kpi-icon"><span class="kpi-dot"></span>${k.icon}</div>
+            <div class="kpi-val ${k.valCls || ""}">${k.val}</div>
+            <div class="kpi-sub">${k.sub}</div>
+        </div>
+    `).join("");
+}
 
 /* ==========================================================================================
-   RECENT TRANSACTIONS TABLE
+   CHIP ROW
+   ========================================================================================== */
+
+function renderChips(stats) {
+    const row = $("chipRow");
+    if (!row) return;
+
+    const chips = [];
+
+    if (stats.topCat) {
+        chips.push(`Top category: <strong>${stats.topCat[0]}</strong> (${fmtMoney(stats.topCat[1])})`);
+    }
+    chips.push(`${stats.months.length} active month${stats.months.length === 1 ? "" : "s"}`);
+
+    row.innerHTML = chips.map(c => `<div class="chip">${c}</div>`).join("");
+}
+
+/* ==========================================================================================
+   VIEW LABEL
+   ========================================================================================== */
+
+function renderViewLabel() {
+    const label = $("viewLabel");
+    const desc  = $("viewDesc");
+    if (!label || !desc) return;
+
+    label.textContent = SELECTED_YEAR === "all" ? "All Time" : String(SELECTED_YEAR);
+    desc.textContent = SELECTED_MONTH === "all"
+        ? "Showing all months"
+        : `Showing ${monthLabel(SELECTED_MONTH)} ${SELECTED_MONTH.split("-")[0]}`;
+}
+
+/* ==========================================================================================
+   CASH FLOW LEGEND
+   ========================================================================================== */
+
+function renderCashLegend() {
+    const legend = $("cashLegend");
+    if (!legend) return;
+
+    legend.innerHTML = `
+        <span><span class="leg-sq" style="background:${COLORS.income}"></span>Income</span>
+        <span><span class="leg-sq" style="background:${COLORS.expense}"></span>Expenses</span>
+        <span><span class="leg-sq" style="background:${COLORS.investment}"></span>Investment</span>
+    `;
+}
+
+/* ==========================================================================================
+   RECENT TRANSACTIONS
    ========================================================================================== */
 
 function renderTransactions(txns) {
@@ -1146,10 +1273,47 @@ function renderTransactions(txns) {
         meta.textContent =
             `${SELECTED_YEAR === "all" ? "All time" : SELECTED_YEAR}`
             + (SELECTED_MONTH !== "all" ? ` · ${monthLabel(SELECTED_MONTH)}` : "")
-/********************************************************************************************
- * SECTION 8 — EXPORT · AUTO‑REFRESH · REFRESH DATA · BOOTSTRAP
- ********************************************************************************************/
+            + ` · ${recent.length} of ${txns.length} shown`;
+    }
 
+    if (recent.length === 0) {
+        body.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:24px">No transactions yet</td></tr>`;
+        return;
+    }
+
+    body.innerHTML = recent.map(t => `
+        <tr>
+            <td class="tx-date">${fmtDate(t.date)}</td>
+            <td><span class="badge ${t.type}">${cap(t.type)}</span></td>
+            <td>${t.category}</td>
+            <td>${t.payment}</td>
+            <td class="tx-amt ${t.type}">${t.type === "income" ? "+" : "-"}${fmtMoney(t.amt, 2)}</td>
+        </tr>
+    `).join("");
+}
+
+/* ==========================================================================================
+   MASTER DASHBOARD RENDER
+   ========================================================================================== */
+
+function renderDashboard() {
+    const txns = getFilteredTxns();
+    const stats = computeStats(txns);
+
+    renderViewLabel();
+    renderKPIs(stats);
+    renderChips(stats);
+    renderCashLegend();
+
+    renderMonthly(stats);
+    renderExpenseCatChart(stats);
+    renderIncomeCatChart(stats);
+    renderDailyBalance();
+    renderPayment(stats);
+    renderYoYCombined();
+    renderAnnualTable();
+    renderTransactions(txns);
+}
 
 /* ==========================================================================================
    EXPORT TO CSV
@@ -1189,10 +1353,8 @@ window.exportToCSV = function () {
     showToast(`Exported ${txns.length} transactions to CSV`, "success");
 };
 
-
-
 /* ==========================================================================================
-   AUTO‑REFRESH TIMER
+   AUTO-REFRESH
    ========================================================================================== */
 
 function startAutoRefresh(minutes = 5) {
@@ -1205,10 +1367,8 @@ function startAutoRefresh(minutes = 5) {
     console.log(`Auto-refresh enabled every ${minutes} minutes`);
 }
 
-
-
 /* ==========================================================================================
-   REFRESH DATA FROM GOOGLE SHEETS
+   REFRESH DATA
    ========================================================================================== */
 
 window.refreshData = async function () {
@@ -1222,7 +1382,7 @@ window.refreshData = async function () {
         const text = await response.text();
         const json = getJSON(text);
 
-        ALL_TXNS = parseRows(json.table.rows || []);
+        ALL_TXNS = parseRows(json.table.rows || [], json.table.cols);
 
         if (ALL_TXNS.length === 0) throw new Error("No transactions found");
 
@@ -1239,7 +1399,6 @@ window.refreshData = async function () {
         populateMonthFilter();
         renderDashboard();
 
-        // Update sync time
         const sync = $("lastSync");
         if (sync) {
             sync.textContent = new Date().toLocaleTimeString("en-US", {
@@ -1263,10 +1422,8 @@ window.refreshData = async function () {
     }
 };
 
-
-
 /* ==========================================================================================
-   BOOTSTRAP — INITIAL DATA LOAD
+   BOOTSTRAP
    ========================================================================================== */
 
 async function boot() {
@@ -1275,12 +1432,13 @@ async function boot() {
     const dashboard    = $("dashboard");
 
     try {
-        // “Still loading…” fallback after 5 seconds
+        console.log("🔍 Starting boot sequence...");
+
         const timeoutId = setTimeout(() => {
             if (ALL_TXNS.length === 0 && loadingState) {
                 loadingState.innerHTML = `
                     <div class="loader-ring"></div>
-                    <p>Still loading... This may take a moment</p>
+                    <p>⏳ Still loading... This may take a moment</p>
                     <p class="loading-hint">Check your internet connection</p>
                 `;
             }
@@ -1289,13 +1447,18 @@ async function boot() {
         const response = await fetch(SHEET_URL);
         clearTimeout(timeoutId);
 
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
 
         const text = await response.text();
         const json = getJSON(text);
 
-        ALL_TXNS = parseRows(json.table.rows || []);
-        if (ALL_TXNS.length === 0) throw new Error("No transactions found");
+        ALL_TXNS = parseRows(json.table.rows || [], json.table.cols);
+
+        if (ALL_TXNS.length === 0) {
+            throw new Error("No transactions found. Make sure your sheet has data.");
+        }
 
         ALL_YEARS = [...new Set(ALL_TXNS.map(t => t.year))].sort();
 
@@ -1320,33 +1483,43 @@ async function boot() {
         populateMonthFilter();
         renderDashboard();
 
-        // Enable auto-refresh
         startAutoRefresh(5);
 
-        showToast("Dashboard ready! Data loaded successfully.", "success");
+        showToast(`✅ Dashboard ready! Loaded ${ALL_TXNS.length} transactions.`, "success");
 
     } catch (err) {
-        console.error("Boot error:", err);
+        console.error("❌ Boot error:", err);
 
         if (loadingState) loadingState.style.display = "none";
-        if (errorState)   errorState.style.display   = "block";
-
-        const msg = qs(".error-message");
-        if (msg) {
-            if (err.message.includes("HTTP 404")) {
-                msg.textContent =
-                    "Google Sheet not found. Please check that your sheet is shared publicly.";
-            } else if (err.message.includes("Failed to fetch")) {
-                msg.textContent =
-                    "Network error. Check your internet connection or CORS restrictions.";
-            } else {
-                msg.textContent = `Error: ${err.message}. Make sure your sheet is public and contains data.`;
+        if (errorState) {
+            errorState.style.display = "block";
+            
+            const msg = qs(".error-message");
+            if (msg) {
+                if (err.message.includes("HTTP 404")) {
+                    msg.innerHTML = `
+                        <strong>Sheet not found (404)</strong><br>
+                        Check that your Sheet ID is correct.
+                        <br><br>
+                        Current Sheet ID: <code>${SHEET_ID}</code>
+                    `;
+                } else if (err.message.includes("Failed to fetch") || err.message.includes("NetworkError")) {
+                    msg.innerHTML = `
+                        <strong>Network Error</strong><br>
+                        Could not reach Google Sheets. Check your internet connection.
+                    `;
+                } else {
+                    msg.innerHTML = `
+                        <strong>Error: ${err.message}</strong>
+                        <br><br>
+                        <p>Check your browser console (F12) for more details.</p>
+                    `;
+                }
             }
         }
     }
 }
 
-
-
 // Start the dashboard
+console.log("🚀 FinanceTrack booting...");
 boot();
