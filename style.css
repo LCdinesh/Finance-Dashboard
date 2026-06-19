@@ -1,7 +1,9 @@
 /* ── Reset & Base ─────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* ── Theme Variables ──────────────────────────────────────────────────────── */
 :root {
+  /* Light mode (default) */
   --bg-primary:    #f8fafc;
   --bg-secondary:  #ffffff;
   --bg-tertiary:   #f1f5f9;
@@ -14,6 +16,10 @@
   --text-tertiary: #94a3b8;
   
   --border-light:  #e2e8f0;
+  --shadow-sm:     0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow:        0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+  --shadow-lg:     0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.08);
+  --card-bg:       #ffffff;
 
   --green:         #10b981;
   --green-light:   #d1fae5;
@@ -30,9 +36,212 @@
 
   --radius:        20px;
   --radius-sm:     12px;
-  --shadow-sm:     0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow:        0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
-  --shadow-lg:     0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.08);
+}
+
+/* ── Dark Mode ────────────────────────────────────────────────────────────── */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-primary:    #0f172a;
+    --bg-secondary:  #1e293b;
+    --bg-tertiary:   #1e293b;
+    --surface:       #1e293b;
+    --surface2:      #1e293b;
+    --surface3:      #334155;
+    
+    --text-primary:  #f1f5f9;
+    --text-secondary: #cbd5e1;
+    --text-tertiary: #94a3b8;
+    
+    --border-light:  #334155;
+    --shadow-sm:     0 1px 2px 0 rgb(0 0 0 / 0.3);
+    --shadow:        0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+    --shadow-lg:     0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4);
+    --card-bg:       #1e293b;
+
+    --green-light:   #064e3b;
+    --red-light:     #7f1d1d;
+    --blue-light:    #1e3a5f;
+    --amber-light:   #78350f;
+    --purple-light:  #2e1065;
+    --teal-light:    #134e4a;
+  }
+
+  .yoy-card {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
+  }
+
+  .card {
+    background: var(--surface);
+    border-color: var(--border-light);
+  }
+
+  .topbar {
+    background: var(--surface);
+    border-bottom-color: var(--border-light);
+  }
+
+  .kpi {
+    background: var(--surface);
+    border-color: var(--border-light);
+  }
+
+  .chip {
+    background: var(--surface);
+    border-color: var(--border-light);
+    color: var(--text-secondary);
+  }
+
+  .chip strong {
+    color: var(--text-primary);
+  }
+
+  .month-filter-container {
+    background: var(--bg-tertiary);
+    border-color: var(--border-light);
+  }
+
+  .month-select {
+    background: var(--surface);
+    color: var(--text-primary);
+    border-color: var(--border-light);
+  }
+
+  .year-pill {
+    background: var(--surface);
+    border-color: var(--border-light);
+    color: var(--text-secondary);
+  }
+
+  .year-pill:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+  }
+
+  .year-pill.active {
+    background: linear-gradient(135deg, var(--green) 0%, var(--teal) 100%);
+    color: #fff;
+  }
+
+  .year-pill.all-pill.active {
+    background: linear-gradient(135deg, var(--blue) 0%, var(--purple) 100%);
+  }
+
+  .yr-arrow {
+    background: var(--bg-tertiary);
+    border-color: var(--border-light);
+    color: var(--text-secondary);
+  }
+
+  .yr-arrow:hover:not(:disabled) {
+    background: var(--surface);
+    color: var(--text-primary);
+  }
+
+  .refresh-btn, .export-btn {
+    background: var(--bg-tertiary);
+    border-color: var(--border-light);
+    color: var(--text-secondary);
+  }
+
+  .refresh-btn:hover, .export-btn:hover {
+    background: var(--surface);
+    color: var(--text-primary);
+  }
+
+  .annual-table td {
+    border-bottom-color: var(--border-light);
+    color: var(--text-secondary);
+  }
+
+  .annual-table th {
+    color: var(--text-tertiary);
+    border-bottom-color: var(--border-light);
+  }
+
+  .annual-table .yr-cell {
+    color: var(--text-primary);
+  }
+
+  .tx-table td {
+    border-bottom-color: var(--border-light);
+    color: var(--text-secondary);
+  }
+
+  .tx-table th {
+    color: var(--text-tertiary);
+    border-bottom-color: var(--border-light);
+  }
+
+  .tx-table tbody tr:hover {
+    background: var(--bg-tertiary);
+  }
+
+  .savings-badge.good {
+    background: var(--green-light);
+    color: var(--green);
+  }
+
+  .savings-badge.ok {
+    background: var(--amber-light);
+    color: var(--amber);
+  }
+
+  .savings-badge.low {
+    background: var(--red-light);
+    color: var(--red);
+  }
+
+  .badge.income {
+    background: var(--green-light);
+    color: var(--green);
+  }
+
+  .badge.expense {
+    background: var(--red-light);
+    color: var(--red);
+  }
+
+  .badge.investment {
+    background: var(--blue-light);
+    color: var(--blue);
+  }
+
+  .error-instructions {
+    background: var(--bg-tertiary);
+  }
+
+  .view-label {
+    background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .toast-message {
+    background: var(--green);
+    color: #fff;
+  }
+
+  .toast-message.error {
+    background: var(--red);
+  }
+
+  .toast-message.warning {
+    background: var(--amber);
+  }
+
+  .loader-ring {
+    border-color: var(--border-light);
+    border-top-color: var(--green);
+  }
+
+  .donut-leg-item {
+    color: var(--text-secondary);
+  }
+
+  .donut-leg-val {
+    color: var(--text-tertiary);
+  }
 }
 
 body {
@@ -43,6 +252,7 @@ body {
   font-size: 14px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
 /* ── Top Bar ──────────────────────────────────────────────────────────────── */
@@ -53,6 +263,7 @@ body {
   z-index: 200;
   border-bottom: 1px solid var(--border-light);
   box-shadow: var(--shadow-sm);
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 .topbar-inner {
   max-width: 1400px;
@@ -141,6 +352,7 @@ body {
   padding: 6px 16px;
   border-radius: 40px;
   border: 1px solid var(--border-light);
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 .month-filter-container label { font-size: 13px; font-weight: 600; color: var(--text-secondary); }
 .month-select {
@@ -152,6 +364,7 @@ body {
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
+  transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 .month-select:hover { border-color: var(--green); }
 
@@ -177,8 +390,9 @@ body {
   cursor: pointer;
   font-size: 16px;
   transition: all 0.2s ease;
+  color: var(--text-secondary);
 }
-.refresh-btn:hover, .export-btn:hover { background: var(--surface); transform: rotate(180deg); }
+.refresh-btn:hover, .export-btn:hover { background: var(--surface); transform: rotate(180deg); color: var(--text-primary); }
 .log-btn {
   background: linear-gradient(135deg, var(--green) 0%, var(--teal) 100%);
   color: #fff;
@@ -336,8 +550,6 @@ body {
 }
 .chip:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
 .chip strong { color: var(--text-primary); font-weight: 700; }
-.chip.good { background: var(--green-light); border-color: var(--green); color: var(--green); }
-.chip.warn { background: var(--amber-light); border-color: var(--amber); color: var(--amber); }
 
 /* ── Cards ────────────────────────────────────────────────────────────────── */
 .card {
@@ -346,7 +558,7 @@ body {
   border: 1px solid var(--border-light);
   padding: 24px 28px;
   margin-bottom: 20px;
-  transition: all 0.2s ease;
+  transition: all 0.2s ease, background 0.3s ease, border-color 0.3s ease;
 }
 .card:hover { box-shadow: var(--shadow-lg); }
 .yoy-card { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-color: rgba(255,255,255,0.1); }
@@ -370,8 +582,8 @@ body {
 .leg-sq { width: 10px; height: 10px; border-radius: 3px; }
 
 /* ── Donut legend ─────────────────────────────────────────────────────────── */
-.donut-leg { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
-.donut-leg-item { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.donut-leg { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.donut-leg-item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-secondary); }
 .donut-leg-dot { width: 10px; height: 10px; border-radius: 50%; }
 .donut-leg-val { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-tertiary); }
 
@@ -427,33 +639,3 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 .card, .kpi, .chip { animation: fadeUp 0.4s ease-out both; }
-
-
-.category-filter-bar {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    background: var(--bg-tertiary);
-    padding: 8px 16px;
-    border-radius: 12px;
-    border: 1px solid var(--border-light);
-    margin-top: 8px;
-}
-
-.category-filter-bar label {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-secondary);
-}
-
-.category-select {
-    padding: 6px 12px;
-    border-radius: 8px;
-    border: 1px solid var(--border-light);
-    background: var(--surface);
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    flex-grow: 1;
-}
